@@ -52,6 +52,7 @@ func (s *server) Start() {
 	v1 := s.app.Group("v1")
 	modules := InitModule(v1, s, middlewares)
 	modules.MonitoredModule()
+	modules.UsersModule()
 
 	s.app.Use(middlewares.RouterCheck())
 	//Graceful shutdown ถ้า server ถูก interrupt จะคืน resource ก่อน ค่อยๆปิดฟังก์ชั่นต่างๆ ก่อนจะปิดตัวแอปลง
