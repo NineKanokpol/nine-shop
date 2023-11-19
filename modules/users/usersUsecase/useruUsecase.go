@@ -15,6 +15,8 @@ type IUsersUseCase interface {
 	GetPassport(req *users.UserCredentials) (*users.UserPassport, error)
 	RefreshTokenPassport(req *users.UserRefreshCredential) (*users.UserPassport, error)
 	DeleteOauth(oauthId string) error
+	InsertAdmin(req *users.UserRegisterRequest) (*users.UserPassport, error)
+	GetUserProfile(userId string) (*users.User, error)
 }
 
 type usersUsecase struct {
@@ -36,6 +38,19 @@ func (u *usersUsecase) InsertCustomer(req *users.UserRegisterRequest) (*users.Us
 	}
 
 	result, err := u.usersRepository.InsertUser(req, false)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (u *usersUsecase) InsertAdmin(req *users.UserRegisterRequest) (*users.UserPassport, error) {
+	//hashing password
+	if err := req.BcryptHashing(); err != nil {
+		return nil, err
+	}
+
+	result, err := u.usersRepository.InsertUser(req, true)
 	if err != nil {
 		return nil, err
 	}
@@ -143,4 +158,12 @@ func (u *usersUsecase) DeleteOauth(oauthId string) error {
 		return err
 	}
 	return nil
+}
+
+func (u *usersUsecase) GetUserProfile(userId string) (*users.User, error) {
+	profile, err := u.usersRepository.GetProfile(userId)
+	if err != nil {
+		return nil, err
+	}
+	return profile, nil
 }

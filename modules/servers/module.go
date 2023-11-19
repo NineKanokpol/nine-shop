@@ -53,5 +53,14 @@ func (m *moduleFactory) UsersModule() {
 	router.Post("/signin", handler.SignIn)
 	router.Post("/refresh", handler.RefreshPassport)
 	router.Post("/signout", handler.SignOut)
+	router.Post("/signup-admin", handler.SignOut)
+
+	//* part parameter :user_id
+	router.Get("/:user_id", m.mid.JwtAuth(), m.mid.ParamsCheck(), handler.GetUserProfile)
+	router.Get("/admin/secret", m.mid.JwtAuth(), m.mid.Authorize(2), handler.GenerateAdminToken)
+
+	//Initial admin ขึ้นมา 1 คน ใน db
+	//Gen Admin key
+	//ทุกครั้งที่ทำการสมัครแอดมินเพิ่ม ให้ส่ง admin token มาด้วยทุกครั้งผ่าน middleware
 
 }

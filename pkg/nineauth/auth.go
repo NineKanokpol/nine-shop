@@ -25,12 +25,20 @@ type nineAuth struct {
 	cfg       config.IJwtConfig
 }
 
+type nineAdmin struct {
+	*nineAuth
+}
+
 type nineMapClaims struct {
 	Claims *users.UserClaims `json:"claims"`
 	jwt.RegisteredClaims
 }
 
 type INineAuth interface {
+	SignToken() string
+}
+
+type INineAdmin interface {
 	SignToken() string
 }
 
@@ -51,6 +59,14 @@ func (a *nineAuth) SignToken() string {
 	return ss
 }
 
+func (a *nineAdmin) SignToken() string {
+	//sign token คู่ payload NewWithClaims
+	//asimmatic พวก RHA symmatic key key เดียวใช้ทั้ง encryet decryte
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, a.mapClaims)
+	ss, _ := token.SignedString(a.cfg.AdminKey())
+	return ss
+}
+
 func ParseToken(cfg config.IJwtConfig, tokenString string) (*nineMapClaims, error) {
 	//ParsewithClaims มี payload
 	//sign token แบบ HMAC
@@ -60,6 +76,34 @@ func ParseToken(cfg config.IJwtConfig, tokenString string) (*nineMapClaims, erro
 			return nil, fmt.Errorf("signing method is invalid")
 		}
 		return cfg.SecretKey(), nil
+	})
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenMalformed) {
+			return nil, fmt.Errorf("token format is invalid")
+		} else if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, fmt.Errorf("token had expried")
+		} else {
+			return nil, fmt.Errorf("parse token failed: %v", err)
+		}
+	}
+
+	//* แปลง any -> type อื่นใดๆ ต้องทำแบบนี้
+	if claims, ok := token.Claims.(*nineMapClaims); ok {
+		return claims, nil
+	} else {
+		return nil, fmt.Errorf("claims type is invalid")
+	}
+}
+
+func ParseAdminToken(cfg config.IJwtConfig, tokenString string) (*nineMapClaims, error) {
+	//ParsewithClaims มี payload
+	//sign token แบบ HMAC
+	token, err := jwt.ParseWithClaims(tokenString, &nineMapClaims{}, func(t *jwt.Token) (interface{}, error) {
+		//*ตรวจ algrorithum การ sign token
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("signing method is invalid")
+		}
+		return cfg.AdminKey(), nil
 	})
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenMalformed) {
@@ -104,6 +148,8 @@ func NewNineAuth(tokenType TokenType, cfg config.IJwtConfig, claims *users.UserC
 		return newAccessToken(cfg, claims), nil
 	case Refresh:
 		return newRefreshToken(cfg, claims), nil
+	case Admin:
+		return newAdminToken(cfg), nil
 	default:
 		return nil, fmt.Errorf("unknow token type")
 	}
@@ -138,6 +184,25 @@ func newRefreshToken(cfg config.IJwtConfig, claims *users.UserClaims) INineAuth 
 				ExpiresAt: jwtTimeDurationCal(cfg.RefreshExpiresAt()),
 				NotBefore: jwt.NewNumericDate(time.Now()),
 				IssuedAt:  jwt.NewNumericDate(time.Now()),
+			},
+		},
+	}
+}
+
+func newAdminToken(cfg config.IJwtConfig) INineAuth {
+	return &nineAdmin{
+		nineAuth: &nineAuth{
+			cfg: cfg,
+			mapClaims: &nineMapClaims{
+				Claims: nil,
+				RegisteredClaims: jwt.RegisteredClaims{
+					Issuer:    "nineshop-api",
+					Subject:   "admin-token",
+					Audience:  []string{"admin"},
+					ExpiresAt: jwtTimeDurationCal(300),
+					NotBefore: jwt.NewNumericDate(time.Now()),
+					IssuedAt:  jwt.NewNumericDate(time.Now()),
+				},
 			},
 		},
 	}
