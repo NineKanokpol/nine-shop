@@ -53,6 +53,7 @@ func (s *server) Start() {
 	modules := InitModule(v1, s, middlewares)
 	modules.MonitoredModule()
 	modules.UsersModule()
+	modules.AppinfoModule()
 
 	s.app.Use(middlewares.RouterCheck())
 	//Graceful shutdown ถ้า server ถูก interrupt จะคืน resource ก่อน ค่อยๆปิดฟังก์ชั่นต่างๆ ก่อนจะปิดตัวแอปลง

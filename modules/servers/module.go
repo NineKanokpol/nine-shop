@@ -1,6 +1,9 @@
 package servers
 
 import (
+	"github.com/NineKanokpol/Nine-shop-test/modules/appinfo/appinfoHandlers"
+	"github.com/NineKanokpol/Nine-shop-test/modules/appinfo/appinfoRepositories"
+	"github.com/NineKanokpol/Nine-shop-test/modules/appinfo/appinfoUseCases"
 	"github.com/NineKanokpol/Nine-shop-test/modules/middlewares/middlewareHandlers"
 	"github.com/NineKanokpol/Nine-shop-test/modules/middlewares/middlewaresRepositories"
 	"github.com/NineKanokpol/Nine-shop-test/modules/middlewares/middlewaresUsecases"
@@ -14,6 +17,7 @@ import (
 type IModuleFactory interface {
 	MonitoredModule()
 	UsersModule()
+	AppinfoModule()
 }
 
 type moduleFactory struct {
@@ -49,11 +53,11 @@ func (m *moduleFactory) UsersModule() {
 
 	//v1/users/sign
 	router := m.router.Group("/users")
-	router.Post("/signup", handler.SighUpCustomer)
-	router.Post("/signin", handler.SignIn)
-	router.Post("/refresh", handler.RefreshPassport)
-	router.Post("/signout", handler.SignOut)
-	router.Post("/signup-admin", handler.SignOut)
+	router.Post("/signup", m.mid.ApiKeyAuth(), handler.SighUpCustomer)
+	router.Post("/signin", m.mid.ApiKeyAuth(), handler.SignIn)
+	router.Post("/refresh", m.mid.ApiKeyAuth(), handler.RefreshPassport)
+	router.Post("/signout", m.mid.ApiKeyAuth(), handler.SignOut)
+	router.Post("/signup-admin", m.mid.JwtAuth(), m.mid.Authorize(2), handler.SignOut)
 
 	//* part parameter :user_id
 	router.Get("/:user_id", m.mid.JwtAuth(), m.mid.ParamsCheck(), handler.GetUserProfile)
@@ -63,4 +67,15 @@ func (m *moduleFactory) UsersModule() {
 	//Gen Admin key
 	//ทุกครั้งที่ทำการสมัครแอดมินเพิ่ม ให้ส่ง admin token มาด้วยทุกครั้งผ่าน middleware
 
+}
+
+func (m *moduleFactory) AppinfoModule() {
+	repository := appinfoRepositories.AppinfoRepository(m.server.db)
+	usecase := appinfoUseCases.AppinfoUseCase(repository)
+	handler := appinfoHandlers.AppinfoHandler(m.server.cfg, usecase)
+
+	router := m.router.Group("/appinfo")
+
+	router.Get("/apikey", m.mid.JwtAuth(), m.mid.Authorize(2), handler.GenerateApiKey)
+	router.Get("/categories", m.mid.ApiKeyAuth(), handler.FindCategory)
 }
