@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// /เก็บ struct ที่เรียกใช้ได้ทุก module เป็น response ที่ต้องการคืนออกไป
 type IResponse interface {
 	Success(code int, data any) IResponse
 	Error(code int, traceId, msg string) IResponse
@@ -20,7 +21,7 @@ type Response struct {
 }
 
 type ErrorResponse struct {
-	TraceId string `json:"trace"`
+	TraceId string `json:"trace"` //id ของ error นั้นๆ
 	Msg     string `json:"msg"`
 }
 

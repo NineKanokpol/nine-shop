@@ -46,6 +46,7 @@ func MiddlewaresHandler(cfg config.IConfig, middlewaresUsecase middlewaresUsecas
 }
 
 func (h *middlewaresHandler) Cors() fiber.Handler {
+	//return type เป็น fiber.Handler
 	return cors.New(cors.Config{
 		Next:             cors.ConfigDefault.Next,
 		AllowOrigins:     "*",
@@ -70,7 +71,7 @@ func (h *middlewaresHandler) RouterCheck() fiber.Handler {
 
 func (h *middlewaresHandler) Logger() fiber.Handler {
 	return logger.New(logger.Config{
-		Format:     "${time} [${ip}] ${status} - ${method} ${path}\n",
+		Format:     "${time} [${ip}] ${status} - ${method} ${path}\n", // \n ขึ้นบรรทัดใหม่
 		TimeFormat: "01/02/2006",
 		TimeZone:   "Bangkok/Asia",
 	})

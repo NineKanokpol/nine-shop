@@ -1,6 +1,6 @@
 BEGIN;
 
---ต้อง drop trigger เพราะจะไปติดกับ table ไม่งั้นจะ drop ตัวอื่นไม่ได้
+--ต้อง drop trigger เพราะจะไปติดกับหลายๆ table ไม่งั้นจะ drop ตัวอื่นไม่ได้
 DROP TRIGGER IF EXISTS set_updated_at_timestamp_users_table ON "users";
 DROP TRIGGER IF EXISTS set_updated_at_timestamp_oauth_table ON "oauth";
 DROP TRIGGER IF EXISTS set_updated_at_timestamp_products_table ON "products";

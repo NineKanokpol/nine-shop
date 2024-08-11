@@ -13,6 +13,7 @@ import (
 func LoadConfig(path string) IConfig {
 	envMap, err := godotenv.Read(path)
 	if err != nil {
+		///log แบบ Fatalf จะหยุดทำงานพร้อม log
 		log.Fatalf("load dotenv failed: %v", err)
 	}
 
@@ -20,6 +21,7 @@ func LoadConfig(path string) IConfig {
 		app: &app{
 			host: envMap["APP_HOST"],
 			port: func() int {
+				//atoi แปลง str to int
 				p, err := strconv.Atoi(envMap["APP_PORT"])
 				if err != nil {
 					log.Fatalf("load port failed: %v", err)
@@ -33,6 +35,7 @@ func LoadConfig(path string) IConfig {
 				if err != nil {
 					log.Fatalf("load read timeout failed: %v", err)
 				}
+				/// เป็น nano sec ต้อง *10^9 เพื่อแปลงเป็น sec
 				return time.Duration(int64(t) * int64(math.Pow10(9)))
 			}(),
 			writeTimeout: func() time.Duration {
@@ -127,6 +130,7 @@ type IAppConfig interface {
 	Port() int
 }
 
+// /App เข้าถึงจาก method
 type app struct {
 	host         string
 	port         int
@@ -142,7 +146,8 @@ type app struct {
 func (c *config) App() IAppConfig {
 	return c.app
 }
-func (a *app) Url() string                 { return fmt.Sprintf("%s:%d", a.host, a.port) } // host:port
+
+func (a *app) Url() string                 { return fmt.Sprintf("%s:%d", a.host, a.port) } // host:port %v any type
 func (a *app) Name() string                { return a.name }
 func (a *app) Version() string             { return a.version }
 func (a *app) ReadTimeout() time.Duration  { return a.readTimeout }

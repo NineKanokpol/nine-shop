@@ -7,8 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-//*รับ request จาก network
-
+// *รับ api request จาก network ทำรองจาก entites
 type IMonitorHandlers interface {
 	HealthCheck(c *fiber.Ctx) error
 }
@@ -28,5 +27,5 @@ func (h *monitorHandler) HealthCheck(c *fiber.Ctx) error {
 		Name:    h.cfg.App().Name(),
 		Version: h.cfg.App().Version(),
 	}
-	return entities.NewResponse(c).Success(fiber.StatusOK,res).Res()
+	return entities.NewResponse(c).Success(fiber.StatusOK, res).Res()
 }

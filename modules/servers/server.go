@@ -11,11 +11,13 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// /มี interface ต้องมี struct
 type IServer interface {
 	Start()
 }
 
 type server struct {
+	///app ไม่ pass เพราะจะ init ตอน start sever
 	app *fiber.App
 	db  *sqlx.DB
 	cfg config.IConfig
@@ -42,14 +44,17 @@ func NewServer(cfg config.IConfig, db *sqlx.DB) IServer {
 func (s *server) Start() {
 	//Middlewares
 	middlewares := InitMiddlewares(s)
-	//*ต้องประกาศกหลังจากที่ user ยิง api เข้ามาหา server
+
+	//*ต้องประกาศหลังจากที่ user ยิง api เข้ามาหา server
 	s.app.Use(middlewares.Logger())
-	//*Use() ประกาศให้ middlewares ประกาศทุก end-point
+
+	//*Use() ประกาศให้ middlewares เรียกใช้และประกาศทุก end-point
 	s.app.Use(middlewares.Cors())
 
 	//Modules
 	//https://localhost:3000/
 	v1 := s.app.Group("v1")
+	///return เป็น interface เอาค่ามารับเพื่อเอาค่าไปใช้ต่อ
 	modules := InitModule(v1, s, middlewares)
 	modules.MonitoredModule()
 	modules.UsersModule()

@@ -11,6 +11,7 @@ TRUNCATE TABLE "images" CASCADE;
 TRUNCATE TABLE "orders" CASCADE;
 TRUNCATE TABLE "products_orders" CASCADE;
 
+--reset seq ที่รันอัตโนมัติ
 SELECT SETVAL ((SELECT PG_GET_SERIAL_SEQUENCE('"roles"', 'id')), 1, FALSE);
 SELECT SETVAL ((SELECT PG_GET_SERIAL_SEQUENCE('"categories"', 'id')), 1, FALSE);
 
