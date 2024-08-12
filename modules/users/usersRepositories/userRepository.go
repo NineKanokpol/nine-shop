@@ -10,8 +10,9 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// /interface struct constructor
 type IUserRespository interface {
-	//*end-point -> url ของเส้น api
+	//*end-point -> url ของเส้น api แยก end-point ระหว่าง customer กับ admin
 	InsertUser(req *users.UserRegisterRequest, isAdmin bool) (*users.UserPassport, error)
 	FindOneUserByEmail(email string) (*users.UserCredentialChecker, error)
 	InsertOauth(req *users.UserPassport) error
@@ -25,6 +26,7 @@ type usersRepository struct {
 	db *sqlx.DB
 }
 
+// constructor
 func UsersRespository(db *sqlx.DB) IUserRespository {
 	return &usersRepository{
 		db: db,
@@ -54,6 +56,8 @@ func (r *usersRepository) InsertUser(req *users.UserRegisterRequest, isAdmin boo
 	return user, nil
 }
 
+// เอา struct ของ repo มา dot และเป็นฟังก์ชั่นที่ใช้ email ไปหา
+// repo -> usecase
 func (r *usersRepository) FindOneUserByEmail(email string) (*users.UserCredentialChecker, error) {
 	query := `
 	SELECT
@@ -72,6 +76,7 @@ func (r *usersRepository) FindOneUserByEmail(email string) (*users.UserCredentia
 	return user, nil
 }
 
+// เช็คว่า user เคย login เข้ามาแล้ว
 func (r *usersRepository) InsertOauth(req *users.UserPassport) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -84,6 +89,7 @@ func (r *usersRepository) InsertOauth(req *users.UserPassport) error {
 	VALUES ($1, $2, $3)
 		RETURNING "id";`
 
+	//Scan ต้อง pass แบบ ref
 	if err := r.db.QueryRowContext(
 		ctx,
 		query,
@@ -96,6 +102,7 @@ func (r *usersRepository) InsertOauth(req *users.UserPassport) error {
 	return nil
 }
 
+// หา oauth เพื่อจะ update refresh token
 func (r *usersRepository) FindOneOauth(refreshToken string) (*users.Oauth, error) {
 	//*$1 มี parameter ตัวเดียวเลยเป็นเลข 1
 	query := `
@@ -105,6 +112,7 @@ func (r *usersRepository) FindOneOauth(refreshToken string) (*users.Oauth, error
 	FROM "oauth"
 	WHERE "refresh_token" = $1;`
 
+	//ใช้ get เพราะ return ตัวเดียว
 	oauth := new(users.Oauth)
 	if err := r.db.Get(oauth, query, refreshToken); err != nil {
 		return nil, fmt.Errorf("oauth not found")
@@ -112,14 +120,16 @@ func (r *usersRepository) FindOneOauth(refreshToken string) (*users.Oauth, error
 	return oauth, nil
 }
 
+// ฟังก์ชัน update oauth
 func (r *usersRepository) UpdateOauth(req *users.UserToken) error {
+	//:<> เหมาะกับ update กับ insert
 	query := `
 	UPDATE "oauth" SET 
 	"access_token" = :access_token,
 	"refresh_token" = :refresh_token
 	WHERE "id" = :id;
 	`
-	//* context.Background() คือ resouce ก่อนที่จะปิด
+	//* context.Background() คืน resouce ก่อนที่จะปิด
 	if _, err := r.db.NamedExecContext(context.Background(), query, req); err != nil {
 		return fmt.Errorf("update oauth failed %v", err)
 	}
@@ -144,6 +154,7 @@ func (r *usersRepository) GetProfile(userId string) (*users.User, error) {
 	return profile, nil
 }
 
+// การ sign out
 func (r *usersRepository) DeleteOauth(oauthId string) error {
 	query := `
 	DELETE FROM "oauth" WHERE "id" = $1;

@@ -11,6 +11,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// start สร้าง token
 type TokenType string
 
 const (
@@ -21,10 +22,12 @@ const (
 )
 
 type nineAuth struct {
+	//mapClaim = payload (mapClaim มาจาก doc)
 	mapClaims *nineMapClaims
 	cfg       config.IJwtConfig
 }
 
+// ทำ admin token 1
 type nineAdmin struct {
 	*nineAuth
 }
@@ -33,11 +36,14 @@ type nineApikey struct {
 	*nineAuth
 }
 
+// /สร้างฟังก์ชั่นนี้เสร็จไปสร้างใน users.go
 type nineMapClaims struct {
+	//jwt.RegisteredClaims ใน doc require จำเป็นมากๆ
 	Claims *users.UserClaims `json:"claims"`
 	jwt.RegisteredClaims
 }
 
+// ทำ admin token 2
 type INineAuth interface {
 	SignToken() string
 }
@@ -56,17 +62,20 @@ func jwtTimeDurationCal(t int) *jwt.NumericDate {
 }
 
 func jwtTimeRepeatAdapter(t int64) *jwt.NumericDate {
+	//ใช้สำหรับ refresh token
+	//time.Unix เป็น type time.time แปลงเวลาปกติเป็น time.Unix
 	return jwt.NewNumericDate(time.Unix(t, 0))
 }
 
 func (a *nineAuth) SignToken() string {
 	//sign token คู่ payload NewWithClaims
-	//asimmatic พวก RHA symmatic key key เดียวใช้ทั้ง encryet decryte
+	//asimmatic พวก RHA symmatic คือ key เดียวใช้ทั้ง encryet decryte
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, a.mapClaims)
 	ss, _ := token.SignedString(a.cfg.SecretKey())
 	return ss
 }
 
+// ทำ admin token 2
 func (a *nineAdmin) SignToken() string {
 	//sign token คู่ payload NewWithClaims
 	//asimmatic พวก RHA symmatic key key เดียวใช้ทั้ง encryet decryte
@@ -82,11 +91,14 @@ func (a *nineApikey) SignToken() string {
 	return ss
 }
 
+// ตรวจดูรูปแบบ token
 func ParseToken(cfg config.IJwtConfig, tokenString string) (*nineMapClaims, error) {
 	//ParsewithClaims มี payload
 	//sign token แบบ HMAC
+	//nineMap struct ที่จะออกไปเป็น payload
 	token, err := jwt.ParseWithClaims(tokenString, &nineMapClaims{}, func(t *jwt.Token) (interface{}, error) {
 		//*ตรวจ algrorithum การ sign token
+		//token ที่ใช้ key เดียวในการ sign คือ HMAC
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("signing method is invalid")
 		}
@@ -102,7 +114,8 @@ func ParseToken(cfg config.IJwtConfig, tokenString string) (*nineMapClaims, erro
 		}
 	}
 
-	//* แปลง any -> type อื่นใดๆ ต้องทำแบบนี้
+	//ตรวจ claims เป็น struct ที่เราทำ payload รึเปล่า
+	//* แปลง any -> type อื่นใดๆ ต้องทำแบบนี้ vvvvvv >> .()
 	if claims, ok := token.Claims.(*nineMapClaims); ok {
 		return claims, nil
 	} else {
@@ -110,6 +123,7 @@ func ParseToken(cfg config.IJwtConfig, tokenString string) (*nineMapClaims, erro
 	}
 }
 
+// ทำ admin token 3
 func ParseAdminToken(cfg config.IJwtConfig, tokenString string) (*nineMapClaims, error) {
 	//ParsewithClaims มี payload
 	//sign token แบบ HMAC
@@ -166,6 +180,7 @@ func ParseApiKey(cfg config.IJwtConfig, tokenString string) (*nineMapClaims, err
 	}
 }
 
+// เพื่อ gen refesh token ใหม่ วันสร้างวันใหม่ แต่วันหมดอายุวันเดิม
 func RepeatToken(cfg config.IJwtConfig, claims *users.UserClaims, exp int64) string {
 	obj := &nineAuth{
 		cfg: cfg,
@@ -185,6 +200,7 @@ func RepeatToken(cfg config.IJwtConfig, claims *users.UserClaims, exp int64) str
 }
 
 // factory
+// tokentype จะได้รู้ว่าโรงงานไหนมาผลิต token ให้
 func NewNineAuth(tokenType TokenType, cfg config.IJwtConfig, claims *users.UserClaims) (INineAuth, error) {
 	switch tokenType {
 	case Access:
@@ -209,7 +225,7 @@ func newAccessToken(cfg config.IJwtConfig, claims *users.UserClaims) INineAuth {
 				Issuer:    "nineshop-api",
 				Subject:   "access-token",
 				Audience:  []string{"customer", "admin"},
-				ExpiresAt: jwtTimeDurationCal(cfg.AccessExpiresAt()),
+				ExpiresAt: jwtTimeDurationCal(cfg.AccessExpiresAt()), //ฟังก์ชั่นการคำนวณการหมดอายุ token
 				NotBefore: jwt.NewNumericDate(time.Now()),
 				IssuedAt:  jwt.NewNumericDate(time.Now()),
 			},
@@ -234,6 +250,7 @@ func newRefreshToken(cfg config.IJwtConfig, claims *users.UserClaims) INineAuth 
 	}
 }
 
+// ทำ admin token 5
 func newAdminToken(cfg config.IJwtConfig) INineAuth {
 	return &nineAdmin{
 		nineAuth: &nineAuth{

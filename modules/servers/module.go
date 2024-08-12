@@ -26,6 +26,7 @@ type moduleFactory struct {
 	mid    middlewareHandlers.IMiddlewaresHandler
 }
 
+// init module ต้อง init middleware ไปด้วย
 func InitModule(r fiber.Router, s *server, mid middlewareHandlers.IMiddlewaresHandler) IModuleFactory {
 	return &moduleFactory{
 		router: r,
@@ -34,7 +35,9 @@ func InitModule(r fiber.Router, s *server, mid middlewareHandlers.IMiddlewaresHa
 	}
 }
 
+// /init middleware
 func InitMiddlewares(s *server) middlewareHandlers.IMiddlewaresHandler {
+	///ชั้นใน -> ชั้นนอก
 	respository := middlewaresRepositories.MiddlewaresRepository(s.db)
 	usecase := middlewaresUsecases.MiddlewaresUsecase(respository)
 	return middlewareHandlers.MiddlewaresHandler(s.cfg, usecase)
@@ -59,13 +62,14 @@ func (m *moduleFactory) UsersModule() {
 	router.Post("/signout", m.mid.ApiKeyAuth(), handler.SignOut)
 	router.Post("/signup-admin", m.mid.JwtAuth(), m.mid.Authorize(2), handler.SignOut)
 
-	//* part parameter :user_id
+	//* part parameter :user_id //ขั้นตอน 3 เช็ค id user
 	router.Get("/:user_id", m.mid.JwtAuth(), m.mid.ParamsCheck(), handler.GetUserProfile)
+	// 2 admin , 1 customer
 	router.Get("/admin/secret", m.mid.JwtAuth(), m.mid.Authorize(2), handler.GenerateAdminToken)
 
-	//Initial admin ขึ้นมา 1 คน ใน db
+	//Initial admin ขึ้นมา 1 คน ใน db (insert ใน SQL)
 	//Gen Admin key
-	//ทุกครั้งที่ทำการสมัครแอดมินเพิ่ม ให้ส่ง admin token มาด้วยทุกครั้งผ่าน middleware
+	//ทุกครั้งที่ทำการสมัครแอดมินเพิ่ม ให้ส่ง admin token มาด้วยทุกครั้ง ผ่าน middleware
 
 }
 

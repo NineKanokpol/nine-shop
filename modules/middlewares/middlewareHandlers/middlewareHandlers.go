@@ -77,9 +77,11 @@ func (h *middlewaresHandler) Logger() fiber.Handler {
 	})
 }
 
+// ขั้นตอนที่ 3 middleware
 func (h *middlewaresHandler) JwtAuth() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		//*ฟิล์ด Authorization แล้วก็มี "Bearer xxxxxx"
+		//ประกาศการรับ token
 		token := strings.TrimPrefix(c.Get("Authorization"), "Bearer ")
 		result, err := nineauth.ParseToken(h.cfg.Jwt(), token)
 		if err != nil {
@@ -90,6 +92,7 @@ func (h *middlewaresHandler) JwtAuth() fiber.Handler {
 			).Res()
 		}
 
+		//เก็บ payload
 		claims := result.Claims
 		if !h.middlewaresUsecases.FindAccessToken(claims.Id, token) {
 			return entities.NewResponse(c).Error(
@@ -114,18 +117,20 @@ func (h *middlewaresHandler) ParamsCheck() fiber.Handler {
 		if c.Locals("userRoleId").(int) == 2 {
 			return c.Next()
 		}
+		//err
 		if c.Params("user_id") != userId {
 			return entities.NewResponse(c).Error(
 				fiber.ErrUnauthorized.Code,
 				string(paramsCheckErr),
-				"never gonna give you up",
+				"user id wrong access data",
 			).Res()
 		}
 		return c.Next()
 	}
 }
 
-// *expectRoleId ...int รับ params แบบไม่จำกัด tyep array
+// ขั้นตอนที่ 3 ในการทำ role base access control
+// *expectRoleId ...int รับ params แบบไม่จำกัด type array
 func (h *middlewaresHandler) Authorize(expectedRoleId ...int) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userRoleId, ok := c.Locals("userRoleId").(int) //แปลง type
@@ -137,6 +142,7 @@ func (h *middlewaresHandler) Authorize(expectedRoleId ...int) fiber.Handler {
 			).Res()
 		}
 
+		//หา roles ใน db
 		roles, err := h.middlewaresUsecases.FindRole()
 		if err != nil {
 			return entities.NewResponse(c).Error(
@@ -145,10 +151,13 @@ func (h *middlewaresHandler) Authorize(expectedRoleId ...int) fiber.Handler {
 				err.Error(),
 			).Res()
 		}
+
+		//for role + กันในฐาน 10
 		sum := 0
 		for _, v := range expectedRoleId {
 			sum += v
 		}
+
 		expectedValueBinary := utils.BinaryConverter(sum, len(roles))
 		userValueBinary := utils.BinaryConverter(userRoleId, len(roles))
 		for i := range userValueBinary {

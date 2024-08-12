@@ -57,6 +57,8 @@ func (u *usersUsecase) InsertAdmin(req *users.UserRegisterRequest) (*users.UserP
 	return result, nil
 }
 
+// จาก repoมาเขียนฟังก์ชันนี้
+// กำหนด access กับ refresh แล้วไป repo ต่อ insertOauth และกลับมาใส่ oauth
 func (u *usersUsecase) GetPassport(req *users.UserCredentials) (*users.UserPassport, error) {
 	//Find user
 	user, err := u.usersRepository.FindOneUserByEmail(req.Email)
@@ -65,6 +67,7 @@ func (u *usersUsecase) GetPassport(req *users.UserCredentials) (*users.UserPassp
 	}
 
 	//Compare password
+	// req.password รหัสที่pass เข้ามา
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		return nil, fmt.Errorf("password is invalid")
 	}
@@ -75,6 +78,7 @@ func (u *usersUsecase) GetPassport(req *users.UserCredentials) (*users.UserPassp
 		RoleId: user.RoleId,
 	})
 
+	//refreshToken
 	refreshToken, err := nineauth.NewNineAuth(nineauth.Access, u.cfg.Jwt(), &users.UserClaims{
 		Id:     user.Id,
 		RoleId: user.RoleId,
@@ -106,13 +110,13 @@ func (u *usersUsecase) RefreshTokenPassport(req *users.UserRefreshCredential) (*
 		return nil, err
 	}
 
-	//check oauth
+	//check oauth เคย login มารึเปล่า
 	oauth, err := u.usersRepository.FindOneOauth(req.RefreshToken)
 	if err != nil {
 		return nil, err
 	}
 
-	//Find profile
+	//Find profile หาโปรไฟล์จาก oauth
 	profile, err := u.usersRepository.GetProfile(oauth.UserId)
 	if err != nil {
 		return nil, err
@@ -124,6 +128,7 @@ func (u *usersUsecase) RefreshTokenPassport(req *users.UserRefreshCredential) (*
 		RoleId: profile.RoleId,
 	}
 
+	//sign token ใหม่
 	accessToken, err := nineauth.NewNineAuth(
 		nineauth.Access,
 		u.cfg.Jwt(),

@@ -19,13 +19,16 @@ type middlewaresRepository struct {
 }
 
 func MiddlewaresRepository(db *sqlx.DB) IMiddlewaresRepository {
+	///return เป็น struct เพราะจะเอาไปใช้กับ interface
 	return &middlewaresRepository{
 		db: db,
 	}
 }
 
+// ขั้นตอนที่ 1 middleware
 func (r *middlewaresRepository) FindAccessToken(userId, accessToken string) bool {
 	//*CASE WHEN คือ if else ใน postgest
+	//$1 $2 ต้องเรียงตามลำดับ (&check, query, userId, accessToken)
 	query := `
 	SELECT
 		(CASE WHEN COUNT(*) = 1 THEN TRUE ELSE FALSE END)
@@ -40,6 +43,7 @@ func (r *middlewaresRepository) FindAccessToken(userId, accessToken string) bool
 	return true
 }
 
+// ขั้นตอนที่ 1 ในการทำ role base access control
 func (r *middlewaresRepository) FindRole() ([]*middlewares.Role, error) {
 	query := `
 	SELECT

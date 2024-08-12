@@ -15,12 +15,16 @@ type User struct {
 }
 
 type UserRegisterRequest struct {
+	//เพิ่ม form เนื่องจากใช้ x-www-form ใน postman ซึ่งปลอดภัยกว่า raw json
 	Email    string `db:"email" json:"emai" form:"email"`
 	Password string `db:"password" json:"password" form:"password"`
 	Username string `db:"username" json:"username" form:"username"`
 }
 
+// ไม่เก็บรหัส password ของ user โดยเข้ารหัสไม่ให้ admin เห็น
+// Vvvvvเป็น method ไปใช้กับ struct ตัวไหนเอามาไว้ข้างหน้า
 func (obj *UserRegisterRequest) BcryptHashing() error {
+	// เลข 10 ยิงเยอะยิงแฮ็คยาก แต่เวลาถอดรหัสจะใช้ทรัพยากรเยอะ
 	hashedPasswords, err := bcrypt.GenerateFromPassword([]byte(obj.Password), 10)
 	if err != nil {
 		return fmt.Errorf("hashed password failed: %v", err)
@@ -30,6 +34,7 @@ func (obj *UserRegisterRequest) BcryptHashing() error {
 	return nil
 }
 
+// ทำ sign in
 type UserCredentials struct {
 	Email    string `db:"email" json:"email" form:"email"`
 	Password string `db:"password" json:"password" form:"password"`
@@ -43,6 +48,7 @@ type UserCredentialChecker struct {
 	RoleId   int    `db:"role_id"`
 }
 
+// ฟังก์ชั่นเช็ค pattern email
 func (obj *UserRegisterRequest) IsEmail() bool {
 	match, err := regexp.MatchString(`^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$`, obj.Email)
 	if err != nil {
@@ -61,6 +67,8 @@ type UserToken struct {
 	AccessToken  string `db:"access_token" json:"access_token"`
 	RefreshToken string `db:"refresh_token" json:"refresh_token"`
 }
+
+////////------------------------------////////////////
 
 type UserClaims struct {
 	//*ห้ามเอาข้อมุล sensitive เข้ามา

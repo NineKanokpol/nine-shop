@@ -56,11 +56,13 @@ func (s *server) Start() {
 	v1 := s.app.Group("v1")
 	///return เป็น interface เอาค่ามารับเพื่อเอาค่าไปใช้ต่อ
 	modules := InitModule(v1, s, middlewares)
+
 	modules.MonitoredModule()
 	modules.UsersModule()
 	modules.AppinfoModule()
 
 	s.app.Use(middlewares.RouterCheck())
+
 	//Graceful shutdown ถ้า server ถูก interrupt จะคืน resource ก่อน ค่อยๆปิดฟังก์ชั่นต่างๆ ก่อนจะปิดตัวแอปลง
 	c := make(chan os.Signal, 1) //ประกาศมารับสัญญาณ เช็คตลอดว่าถูก interrupt รึเปล่า โดยต้องเขียนแบบ go concurrency
 	signal.Notify(c, os.Interrupt)

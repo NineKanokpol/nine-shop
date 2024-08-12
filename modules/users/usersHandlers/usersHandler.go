@@ -24,6 +24,7 @@ const (
 )
 
 type IUsersHandler interface {
+	//c *fiber.Ctx ตายตัว
 	SighUpCustomer(c *fiber.Ctx) error
 	SignIn(c *fiber.Ctx) error
 	RefreshPassport(c *fiber.Ctx) error
@@ -46,7 +47,7 @@ func UsersHandler(cfg config.IConfig, usersUsecase usersUsecase.IUsersUseCase) I
 }
 
 func (h *usersHandler) SighUpCustomer(c *fiber.Ctx) error {
-	//Request body parser
+	//Request body parser เป็นสิ่งที่รับมาจากคนสมัคร
 	req := new(users.UserRegisterRequest)
 	if err := c.BodyParser(req); err != nil {
 		return entities.NewResponse(c).Error(
@@ -69,6 +70,7 @@ func (h *usersHandler) SighUpCustomer(c *fiber.Ctx) error {
 	result, err := h.userUsecase.InsertCustomer(req)
 	if err != nil {
 		switch err.Error() {
+		//กลับไปดูที่ repo(pattern) หากลืมว่าดัก error อะไรไว้
 		case "username has been used":
 			return entities.NewResponse(c).Error(
 				fiber.ErrBadRequest.Code,
@@ -89,9 +91,10 @@ func (h *usersHandler) SighUpCustomer(c *fiber.Ctx) error {
 			).Res()
 		}
 	}
-	return entities.NewResponse(c).Success(fiber.StatusOK, result).Res()
+	return entities.NewResponse(c).Success(fiber.StatusCreated, result).Res()
 }
 
+// ขั้นที่ 4 admin
 func (h *usersHandler) SignUpAdmin(c *fiber.Ctx) error {
 	//Request body parser
 	req := new(users.UserRegisterRequest)
@@ -135,9 +138,11 @@ func (h *usersHandler) SignUpAdmin(c *fiber.Ctx) error {
 			).Res()
 		}
 	}
+
 	return entities.NewResponse(c).Success(fiber.StatusOK, result).Res()
 }
 
+// ทำ admin token 4
 func (h *usersHandler) GenerateAdminToken(c *fiber.Ctx) error {
 	adminToken, err := nineauth.NewNineAuth(
 		nineauth.Admin,
@@ -164,6 +169,7 @@ func (h *usersHandler) GenerateAdminToken(c *fiber.Ctx) error {
 
 func (h *usersHandler) SignIn(c *fiber.Ctx) error {
 	req := new(users.UserCredentials)
+
 	if err := c.BodyParser(req); err != nil {
 		return entities.NewResponse(c).Error(
 			fiber.ErrBadRequest.Code,
@@ -171,6 +177,7 @@ func (h *usersHandler) SignIn(c *fiber.Ctx) error {
 			err.Error(),
 		).Res()
 	}
+
 	passport, err := h.userUsecase.GetPassport(req)
 	if err != nil {
 		return entities.NewResponse(c).Error(
@@ -179,6 +186,7 @@ func (h *usersHandler) SignIn(c *fiber.Ctx) error {
 			err.Error(),
 		).Res()
 	}
+
 	return entities.NewResponse(c).Success(fiber.StatusOK, passport).Res()
 }
 
@@ -203,6 +211,7 @@ func (h *usersHandler) RefreshPassport(c *fiber.Ctx) error {
 }
 
 func (h *usersHandler) SignOut(c *fiber.Ctx) error {
+	//ส่วน body
 	req := new(users.UserRemoveCredential)
 	if err := c.BodyParser(req); err != nil {
 		return entities.NewResponse(c).Error(
@@ -223,6 +232,7 @@ func (h *usersHandler) SignOut(c *fiber.Ctx) error {
 	return entities.NewResponse(c).Success(fiber.StatusOK, nil).Res()
 }
 
+// ขั้นตอน 2 เช็ค id user
 func (h *usersHandler) GetUserProfile(c *fiber.Ctx) error {
 	// Set params
 	userId := strings.Trim(c.Params("user_id"), " ")
@@ -239,7 +249,7 @@ func (h *usersHandler) GetUserProfile(c *fiber.Ctx) error {
 			).Res()
 		default:
 			return entities.NewResponse(c).Error(
-				fiber.ErrInternalServerError.Code,
+				fiber.ErrInternalServerError.Code, //500 status
 				string(getUserProfileErr),
 				err.Error(),
 			).Res()

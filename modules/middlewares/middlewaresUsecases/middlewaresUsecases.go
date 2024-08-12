@@ -20,6 +20,7 @@ func MiddlewaresUsecase(middlewaresRepository middlewaresRepositories.IMiddlewar
 	}
 }
 
+// ขั้นตอนที่ 2 middleware
 func (u *middlewaresUsecase) FindAccessToken(userId, accessToken string) bool {
 	return u.middlewaresRepository.FindAccessToken(userId, accessToken)
 }
